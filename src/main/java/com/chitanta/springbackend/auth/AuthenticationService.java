@@ -1,6 +1,7 @@
 package com.chitanta.springbackend.auth;
 
 import com.chitanta.springbackend.config.JWTService;
+import com.chitanta.springbackend.config.CSRFService;
 import com.chitanta.springbackend.token.Token;
 import com.chitanta.springbackend.token.TokenRepository;
 import com.chitanta.springbackend.token.TokenType;
@@ -32,6 +33,7 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final JWTService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final CSRFService csrfService;
 
     //TODO: I ll need to change this for PROD, role will be selected manually, everyone will be a user through api registering
     //TODO: Maybe make an admin dashboard for the app to assign roles
@@ -49,9 +51,13 @@ public class AuthenticationService {
         String refreshToken = jwtService.generateRefreshToken(savedUser);
         saveUserToken(savedUser, jwtToken);
 
-        // Set only refresh token cookie
+        // Set refresh token and CSRF token cookies
         //TODO maybe need a mechanism to flush these cookies if they exist (for whatever reason), same in authenticate
         response.addHeader("Set-Cookie", jwtService.createRefreshCookie(refreshToken).toString());
+        
+        // Generate and set CSRF token
+        String csrfToken = csrfService.generateCSRFToken(savedUser.getEmail());
+        response.addHeader("Set-Cookie", csrfService.createCSRFCookie(csrfToken).toString());
 
         return AuthenticationResponse.builder()
                 .email(savedUser.getEmail())
@@ -77,8 +83,12 @@ public class AuthenticationService {
         revokeAllUserTokens(user);
         saveUserToken(user, jwtToken);
 
-        // Set only refresh token cookie
+        // Set refresh token and CSRF token cookies
         response.addHeader("Set-Cookie", jwtService.createRefreshCookie(refreshToken).toString());
+        
+        // Generate and set CSRF token
+        String csrfToken = csrfService.generateCSRFToken(user.getEmail());
+        response.addHeader("Set-Cookie", csrfService.createCSRFCookie(csrfToken).toString());
 
         return AuthenticationResponse.builder()
                 .email(user.getEmail())
@@ -152,8 +162,12 @@ public class AuthenticationService {
                 revokeAllUserTokens(user);
                 saveUserToken(user, accessToken);
 
-                // Set only refresh token cookie
+                // Set refresh token and CSRF token cookies
                 response.addHeader("Set-Cookie", jwtService.createRefreshCookie(refreshToken).toString());
+                
+                // Generate and set CSRF token
+                String csrfToken = csrfService.generateCSRFToken(user.getEmail());
+                response.addHeader("Set-Cookie", csrfService.createCSRFCookie(csrfToken).toString());
 
                 AuthenticationResponse authResponse = AuthenticationResponse.builder()
                         .email(user.getEmail())

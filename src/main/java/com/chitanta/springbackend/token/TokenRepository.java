@@ -9,7 +9,7 @@ import java.util.Optional;
 public interface TokenRepository extends JpaRepository<Token, Integer> {
     @Query("""
     SELECT t from Token t inner join User u on t.user.id = u.id
-    WHERE u.id = :userId and (t.expired = false or t.revoked = false)
+    WHERE u.id = :userId and (t.expired = false AND t.revoked = false)
     """)
     List<Token> findAllValidTokensByUser(Integer userId);
 

@@ -23,6 +23,9 @@ application:
       expiration: ${JWT_EXPIRATION} # 1 day
       refresh-token:
         expiration: ${JWT_REFRESH_EXPIRATION} # 7 days
+    csrf:
+      secret-key: ${CSRF_SECRET_KEY}
+      expiration: ${CSRF_EXPIRATION} # 30 minutes
 
 logging:
   level:

@@ -28,6 +28,7 @@ import static org.springframework.http.HttpMethod.*;
 public class SecurityConfiguration {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final TokenRefreshFilter tokenRefreshFilter;
+    private final CSRFFilter csrfFilter;
     private final AuthenticationProvider authenticationProvider;
     private final LogoutHandler logoutHandler;
     private final RequestLoggingFilter requestLoggingFilter;
@@ -60,6 +61,7 @@ public class SecurityConfiguration {
                 .addFilterBefore(requestLoggingFilter, SecurityContextHolderFilter.class)
                 .addFilterBefore(tokenRefreshFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(csrfFilter, JwtAuthenticationFilter.class)
                 .logout(logout -> logout
                         .logoutUrl("/api/v1/auth/logout")
                         .addLogoutHandler(logoutHandler)

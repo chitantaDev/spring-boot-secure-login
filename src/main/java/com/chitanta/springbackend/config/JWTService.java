@@ -61,6 +61,7 @@ public class JWTService {
         return ResponseCookie.from(ACCESS_TOKEN, token)
                 .httpOnly(true)
                 .secure(true)
+                .sameSite("Strict")
                 .path("/")
                 .maxAge(jwtExpiration)
                 .build();
@@ -70,6 +71,7 @@ public class JWTService {
         return ResponseCookie.from(REFRESH_TOKEN, token)
                 .httpOnly(true)
                 .secure(true)
+                .sameSite("Strict")
                 .path("/")
                 .maxAge(refreshExpiration)
                 .build();
@@ -79,6 +81,7 @@ public class JWTService {
         return ResponseCookie.from(name, "")
                 .httpOnly(true)
                 .secure(true)
+                .sameSite("Strict")
                 .path("/")
                 .maxAge(0)
                 .build();

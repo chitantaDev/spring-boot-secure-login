@@ -17,7 +17,14 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
         corsConfiguration.setAllowedOrigins(List.of(ALLOWED_ORIGIN_URL));
-        corsConfiguration.setAllowedHeaders(List.of("*"));
+        corsConfiguration.setAllowedHeaders(List.of(
+                "Authorization", 
+                "Content-Type", 
+                "X-XSRF-TOKEN",
+                "Accept",
+                "Origin",
+                "X-Requested-With"
+        ));
         corsConfiguration.setAllowCredentials(true);
         corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PATCH", "DELETE", "PUT"));
 

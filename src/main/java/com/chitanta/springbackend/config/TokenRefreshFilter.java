@@ -1,5 +1,6 @@
 package com.chitanta.springbackend.config;
 
+import com.chitanta.springbackend.token.Token;
 import com.chitanta.springbackend.token.TokenRepository;
 import com.chitanta.springbackend.user.UserRepository;
 import jakarta.servlet.FilterChain;
@@ -20,6 +21,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 import static com.chitanta.springbackend.helper.Constants.REFRESH_TOKEN;
 
@@ -74,12 +76,12 @@ public class TokenRefreshFilter extends OncePerRequestFilter {
                     String newAccessToken = jwtService.generateToken(user);
                     
                     // Revoke old tokens and save new one
-                    tokenRepository.findAllValidTokensByUser(user.getId())
-                            .forEach(token -> {
-                                token.setExpired(true);
-                                token.setRevoked(true);
-                            });
-                    tokenRepository.saveAll(tokenRepository.findAllValidTokensByUser(user.getId()));
+                    List<Token> validTokens = tokenRepository.findAllValidTokensByUser(user.getId());
+                    validTokens.forEach(token -> {
+                        token.setExpired(true);
+                        token.setRevoked(true);
+                    });
+                    tokenRepository.saveAll(validTokens);
                     
                     jwtService.saveUserToken(user, newAccessToken);
                     

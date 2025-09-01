@@ -20,6 +20,7 @@ import static com.chitanta.springbackend.helper.Constants.REFRESH_TOKEN;
 public class LogoutService implements LogoutHandler {
     private final TokenRepository tokenRepository;
     private final JWTService jwtService;
+    private final CSRFService csrfService;
 
     @Override
     public void logout(
@@ -48,5 +49,6 @@ public class LogoutService implements LogoutHandler {
         // Clear cookies
         response.addHeader("Set-Cookie", jwtService.createEmptyCookie(ACCESS_TOKEN).toString());
         response.addHeader("Set-Cookie", jwtService.createEmptyCookie(REFRESH_TOKEN).toString());
+        response.addHeader("Set-Cookie", csrfService.createEmptyCSRFCookie().toString());
     }
 }
