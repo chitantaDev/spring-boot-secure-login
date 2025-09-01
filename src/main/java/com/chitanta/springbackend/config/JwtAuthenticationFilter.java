@@ -3,7 +3,6 @@ package com.chitanta.springbackend.config;
 import com.chitanta.springbackend.token.TokenRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
@@ -17,9 +16,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Arrays;
-
-import static com.chitanta.springbackend.helper.Constants.ACCESS_TOKEN;
 
 @Component
 @RequiredArgsConstructor
@@ -34,22 +30,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
-        final Cookie[] cookies = request.getCookies();
+        final String authHeader = request.getHeader("Authorization");
         final String jwt;
         final String userEmail;
 
-        if (cookies == null) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        jwt = Arrays.stream(cookies)
-                .filter(cookie -> ACCESS_TOKEN.equals(cookie.getName()))
-                .map(Cookie::getValue)
-                .findFirst()
-                .orElse(null);
+        jwt = authHeader.substring(7); // Remove "Bearer " prefix
 
-        if (jwt == null) {
+        if (jwt == null || jwt.isEmpty()) {
             filterChain.doFilter(request, response);
             return;
         }

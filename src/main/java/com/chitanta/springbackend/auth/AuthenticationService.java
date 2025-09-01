@@ -49,9 +49,8 @@ public class AuthenticationService {
         String refreshToken = jwtService.generateRefreshToken(savedUser);
         saveUserToken(savedUser, jwtToken);
 
-        // Set cookies
+        // Set only refresh token cookie
         //TODO maybe need a mechanism to flush these cookies if they exist (for whatever reason), same in authenticate
-        response.addHeader("Set-Cookie", jwtService.createJwtCookie(jwtToken).toString());
         response.addHeader("Set-Cookie", jwtService.createRefreshCookie(refreshToken).toString());
 
         return AuthenticationResponse.builder()
@@ -59,6 +58,7 @@ public class AuthenticationService {
                 .firstname(savedUser.getFirstname())
                 .lastname(savedUser.getLastname())
                 .role(savedUser.getRole())
+                .accessToken(jwtToken)
                 .build();
     }
 
@@ -77,8 +77,7 @@ public class AuthenticationService {
         revokeAllUserTokens(user);
         saveUserToken(user, jwtToken);
 
-        // Set cookies
-        response.addHeader("Set-Cookie", jwtService.createJwtCookie(jwtToken).toString());
+        // Set only refresh token cookie
         response.addHeader("Set-Cookie", jwtService.createRefreshCookie(refreshToken).toString());
 
         return AuthenticationResponse.builder()
@@ -86,15 +85,28 @@ public class AuthenticationService {
                 .firstname(user.getFirstname())
                 .lastname(user.getLastname())
                 .role(user.getRole())
+                .accessToken(jwtToken)
                 .build();
     }
 
     public AuthenticationResponse checkAuth(User user) {
+        // Generate a fresh access token for the user
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("role", user.getRole());
+        extraClaims.put("firstname", user.getFirstname());
+        
+        String jwtToken = jwtService.generateToken(extraClaims, user);
+        
+        // Revoke old tokens and save the new one
+        revokeAllUserTokens(user);
+        saveUserToken(user, jwtToken);
+        
         return AuthenticationResponse.builder()
                 .email(user.getEmail())
                 .firstname(user.getFirstname())
                 .lastname(user.getLastname())
                 .role(user.getRole())
+                .accessToken(jwtToken)
                 .build();
     }
 
@@ -140,8 +152,7 @@ public class AuthenticationService {
                 revokeAllUserTokens(user);
                 saveUserToken(user, accessToken);
 
-                // Set new cookies
-                response.addHeader("Set-Cookie", jwtService.createJwtCookie(accessToken).toString());
+                // Set only refresh token cookie
                 response.addHeader("Set-Cookie", jwtService.createRefreshCookie(refreshToken).toString());
 
                 AuthenticationResponse authResponse = AuthenticationResponse.builder()
@@ -149,6 +160,7 @@ public class AuthenticationService {
                         .firstname(user.getFirstname())
                         .lastname(user.getLastname())
                         .role(user.getRole())
+                        .accessToken(accessToken)
                         .build();
                 new ObjectMapper().writeValue(response.getOutputStream(), authResponse);
             }
@@ -174,6 +186,7 @@ public class AuthenticationService {
                 .firstname(savedUser.getFirstname())
                 .lastname(savedUser.getLastname())
                 .role(savedUser.getRole())
+                .accessToken(jwtToken)
                 .build();
     }
 }

@@ -1,0 +1,55 @@
+.nav-bar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+}
+
+.app-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    width: 100%;
+    padding-top: 64px;
+    box-sizing: border-box;
+}
+
+.upper-section {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+}
+
+.lower-section {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+}
+/* Example code to strucutre your container*/
+
+.input-container, .chart-container, .finance-container {
+    flex: 1; /* Each takes 1/3 of the upper section */
+    margin: 10px;
+    padding: 15px;
+    overflow: auto; /* In case content is too large */
+}
+
+.table-container {
+    flex: 1; /* Each takes 1/3 of the upper section */
+    display: flex;
+    margin: 10px;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: auto; /* In case content is too large */
+    flex-direction: column; /*or row*/
+    align-items: center;
+    justify-content: center;
+}
+
+.item {
+    flex: 1; /* Each takes 1/3 of the upper section */
+    margin: 10px;
+    padding: 15px;
+    overflow: auto; /* In case content is too large */
+}

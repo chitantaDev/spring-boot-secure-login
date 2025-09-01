@@ -10,13 +10,17 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Arrays;
 
-import static com.chitanta.springbackend.helper.Constants.ACCESS_TOKEN;
 import static com.chitanta.springbackend.helper.Constants.REFRESH_TOKEN;
 
 
@@ -27,6 +31,7 @@ public class TokenRefreshFilter extends OncePerRequestFilter {
     private final JWTService jwtService;
     private final TokenRepository tokenRepository;
     private final UserRepository userRepository;
+    private final UserDetailsService userDetailsService;
 
     @Override
     protected void doFilterInternal(
@@ -38,48 +43,51 @@ public class TokenRefreshFilter extends OncePerRequestFilter {
             return;
         }
 
-        //TODO: Repetetive code, mightaswell refactor into a method
-        String accessToken = Arrays.stream(cookies)
-                .filter(cookie -> ACCESS_TOKEN.equals(cookie.getName()))
-                .map(Cookie::getValue)
-                .findFirst()
-                .orElse(null);
-
         String refreshToken = Arrays.stream(cookies)
                 .filter(cookie -> REFRESH_TOKEN.equals(cookie.getName()))
                 .map(Cookie::getValue)
                 .findFirst()
                 .orElse(null);
 
-        if (accessToken == null || refreshToken == null) {
+        if (refreshToken == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String userEmail = jwtService.extractUsername(accessToken);
-        if (userEmail != null && jwtService.isTokenExpired(accessToken)) {
+        String userEmail = jwtService.extractUsername(refreshToken);
+        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
                 var user = userRepository.findByEmail(userEmail)
                         .orElseThrow();
                 if (jwtService.isTokenValid(refreshToken, user)) {
+                    // Set authentication context so /me endpoint works
+                    UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                    
+                    // Generate a fresh access token
                     String newAccessToken = jwtService.generateToken(user);
-
-                    tokenRepository.findByToken(accessToken)
-                            .ifPresent(token -> {
+                    
+                    // Revoke old tokens and save new one
+                    tokenRepository.findAllValidTokensByUser(user.getId())
+                            .forEach(token -> {
                                 token.setExpired(true);
                                 token.setRevoked(true);
-                                tokenRepository.save(token);
                             });
-
+                    tokenRepository.saveAll(tokenRepository.findAllValidTokensByUser(user.getId()));
+                    
                     jwtService.saveUserToken(user, newAccessToken);
-
-                    response.addHeader("Set-Cookie",
-                            jwtService.createJwtCookie(newAccessToken).toString());
+                    
+                    // Set the new access token in response header for frontend to pick up
+                    response.setHeader("X-New-Access-Token", newAccessToken);
                 }
             } catch (Exception e) {
-                log.error("Failed to generate refresh token for user: {}, error: {}", userEmail, e.getMessage());
-                filterChain.doFilter(request, response);
-                return;
+                log.error("Failed to refresh token for user: {}, error: {}", userEmail, e.getMessage());
             }
         }
 
